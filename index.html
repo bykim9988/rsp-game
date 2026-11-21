@@ -1,0 +1,487 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>가위바위보 룰렛</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px 12px;
+      font-family: "Malgun Gothic", Arial, sans-serif;
+      background: linear-gradient(135deg, #eaf2ff, #f5edff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #222;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 750px;
+      padding: 35px 15px 40px;
+      background: white;
+      border-radius: 28px;
+      text-align: center;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(34px, 6vw, 50px);
+      color: #273c75;
+    }
+
+    /* 결과 표시 */
+    .result {
+      min-height: 110px;
+      margin: 15px 0 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: clamp(36px, 7vw, 62px);
+      font-weight: 900;
+      color: #d63031;
+    }
+
+    /* 원판 영역 */
+    .wheel-area {
+      position: relative;
+      width: min(82vw, 440px);
+      height: min(82vw, 440px);
+      margin: 0 auto 40px;
+    }
+
+    /* 회전하는 룰렛 */
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 9px solid #29364e;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.22);
+      transform: rotate(0deg);
+      will-change: transform;
+    }
+
+    .wheel svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /*
+      노란색 룰렛 핀
+      기존보다 크게 설정
+    */
+    .pointer {
+      position: absolute;
+      z-index: 10;
+
+      top: -26px;
+      left: 50%;
+      transform: translateX(-50%);
+
+      width: 82px;
+      height: 95px;
+
+      background: #ffdb00;
+
+      /* 아래쪽을 가리키는 삼각형 */
+      clip-path: polygon(
+        0% 0%,
+        100% 0%,
+        50% 100%
+      );
+
+      filter: drop-shadow(0 3px 3px rgba(0,0,0,0.3));
+    }
+
+    /* 핀 내부의 작은 강조 표시 */
+    .pointer::after {
+      content: "";
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 43px;
+      height: 58px;
+      background: #fff176;
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    /* 원판 중앙 */
+    .center-dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background: white;
+      border: 7px solid #29364e;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /*
+      손 모양 이미지
+      운영체제 내장 이모지 사용
+      외부 이미지 파일 불필요
+    */
+    .hand-icon {
+      font-size: 92px;
+      font-family:
+        "Segoe UI Emoji",
+        "Apple Color Emoji",
+        "Noto Color Emoji",
+        sans-serif;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      user-select: none;
+    }
+
+    /* 버튼 */
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      min-width: 220px;
+      min-height: 85px;
+      padding: 18px 26px;
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-size: 30px;
+      font-weight: bold;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    button:focus-visible {
+      outline: 4px solid #111;
+      outline-offset: 4px;
+    }
+
+    button:disabled {
+      background: #aaa !important;
+      cursor: not-allowed;
+    }
+
+    #spinBtn {
+      background: #245bd6;
+    }
+
+    #spinBtn:hover:not(:disabled) {
+      background: #1745ae;
+    }
+
+    #retryBtn {
+      background: #218653;
+    }
+
+    #retryBtn:hover:not(:disabled) {
+      background: #17633d;
+    }
+
+    .guide {
+      margin: 28px 0 0;
+      color: #555;
+      font-size: 20px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 520px) {
+      .container {
+        padding: 30px 12px;
+      }
+
+      .wheel-area {
+        width: min(85vw, 380px);
+        height: min(85vw, 380px);
+      }
+
+      .wheel {
+        border-width: 6px;
+      }
+
+      button {
+        width: 100%;
+        max-width: 350px;
+        font-size: 27px;
+      }
+
+      .guide {
+        font-size: 18px;
+      }
+
+      .pointer {
+        width: 68px;
+        height: 80px;
+        top: -22px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>🎯 가위바위보 룰렛</h1>
+
+    <!-- 결과 표시 -->
+    <div class="result" id="result"
+         role="status" aria-live="polite">
+      준비!
+    </div>
+
+    <div class="wheel-area">
+
+      <!-- 커다란 노란색 화살표 -->
+      <div class="pointer"></div>
+
+      <!-- 회전하는 원판 -->
+      <div class="wheel" id="wheel">
+
+        <svg viewBox="0 0 400 400"
+             xmlns="http://www.w3.org/2000/svg"
+             role="img"
+             aria-label="가위 바위 보 손 모양 룰렛">
+
+          <!--
+            세 구역은 각각 120도
+            위쪽: 가위
+            오른쪽 아래: 바위
+            왼쪽 아래: 보
+          -->
+
+          <!-- 가위 영역: 빨간색 -->
+          <path
+            d="M 200 200
+               L 26.795 100
+               A 200 200 0 0 1 373.205 100
+               Z"
+            fill="#ef5350"
+          />
+
+          <!-- 바위 영역: 파란색 -->
+          <path
+            d="M 200 200
+               L 373.205 100
+               A 200 200 0 0 1 200 400
+               Z"
+            fill="#2979ff"
+          />
+
+          <!-- 보 영역: 초록색 -->
+          <path
+            d="M 200 200
+               L 200 400
+               A 200 200 0 0 1 26.795 100
+               Z"
+            fill="#20a675"
+          />
+
+          <!-- 영역 구분선 -->
+          <g stroke="white" stroke-width="5">
+            <line x1="200" y1="200"
+                  x2="26.795" y2="100" />
+
+            <line x1="200" y1="200"
+                  x2="373.205" y2="100" />
+
+            <line x1="200" y1="200"
+                  x2="200" y2="400" />
+          </g>
+
+          <!-- 가위 손 이미지 -->
+          <text
+            x="200"
+            y="92"
+            class="hand-icon"
+            aria-label="가위">
+            ✌️
+          </text>
+
+          <!-- 바위 손 이미지 -->
+          <text
+            x="295"
+            y="262"
+            class="hand-icon"
+            aria-label="바위">
+            ✊
+          </text>
+
+          <!-- 보 손 이미지 -->
+          <text
+            x="105"
+            y="262"
+            class="hand-icon"
+            aria-label="보">
+            🖐️
+          </text>
+
+        </svg>
+
+      </div>
+
+      <!-- 원판 중앙 장식 -->
+      <div class="center-dot"></div>
+
+    </div>
+
+    <!-- 큰 버튼 -->
+    <div class="buttons">
+
+      <button id="spinBtn" type="button">
+        🎯 돌리기
+      </button>
+
+      <button id="retryBtn" type="button" disabled>
+        🔄 다시 돌리기
+      </button>
+
+    </div>
+
+    <p class="guide">
+      버튼을 누르면 룰렛이 돌아갑니다.<br>
+      노란색 화살표가 가리키는 손 모양을 확인하세요!
+    </p>
+
+  </main>
+
+  <script>
+    const wheel = document.getElementById("wheel");
+    const result = document.getElementById("result");
+    const spinBtn = document.getElementById("spinBtn");
+    const retryBtn = document.getElementById("retryBtn");
+
+    // 가위, 바위, 보 정보
+    const choices = [
+      { name: "가위", icon: "✌️" },
+      { name: "바위", icon: "✊" },
+      { name: "보", icon: "🖐️" }
+    ];
+
+    // 현재 회전 각도
+    let currentRotation = 0;
+
+    // 회전 상태
+    let isSpinning = false;
+
+    // 룰렛 회전 시간 (4초)
+    const SPIN_DURATION = 4000;
+
+    // 무작위 정수 생성
+    function randomInt(max) {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const array = new Uint32Array(1);
+        const range = 4294967296;
+        const limit = range - (range % max);
+
+        do {
+          window.crypto.getRandomValues(array);
+        } while (array[0] >= limit);
+
+        return array[0] % max;
+      }
+
+      return Math.floor(Math.random() * max);
+    }
+
+    // 룰렛 돌리기
+    function spinWheel() {
+
+      if (isSpinning) return;
+
+      isSpinning = true;
+
+      spinBtn.disabled = true;
+      retryBtn.disabled = true;
+
+      result.textContent = "돌아가는 중...";
+
+      // 0: 가위, 1: 바위, 2: 보
+      const selectedIndex = randomInt(3);
+
+      // 구역의 중앙 각도
+      const targetAngle = selectedIndex * 120;
+
+      // 6~9바퀴 회전
+      const fullSpins = 6 + randomInt(4);
+
+      // 현재 각도 정규화
+      const normalizedRotation =
+        ((currentRotation % 360) + 360) % 360;
+
+      // 선택된 구역이 위쪽 화살표를 향하게 설정
+      const desiredRotation =
+        (360 - targetAngle) % 360;
+
+      // 추가 회전 각도
+      const additionalRotation =
+        (desiredRotation - normalizedRotation + 360) % 360;
+
+      // 전체 회전 각도
+      currentRotation +=
+        fullSpins * 360 + additionalRotation;
+
+      // 서서히 느려지는 회전 효과
+      wheel.style.transition =
+        `transform ${SPIN_DURATION}ms cubic-bezier(0.12, 0.7, 0.12, 1)`;
+
+      // 회전 시작
+      wheel.style.transform =
+        `rotate(${currentRotation}deg)`;
+
+      // 회전 종료 시 실행
+      wheel.addEventListener(
+        "transitionend",
+        function finish(event) {
+
+          if (event.propertyName !== "transform") return;
+
+          // 손 모양과 결과 표시
+          const selected = choices[selectedIndex];
+
+          result.textContent =
+            selected.icon + " " + selected.name + "!";
+
+          // 버튼 활성화
+          spinBtn.disabled = false;
+          retryBtn.disabled = false;
+
+          isSpinning = false;
+
+        },
+        { once: true }
+      );
+    }
+
+    // 버튼 연결
+    spinBtn.addEventListener("click", spinWheel);
+    retryBtn.addEventListener("click", spinWheel);
+
+  </script>
+
+</body>
+</html>
